@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sticky Notes Wall</title>
+  <style>*{ box-sizing: border-box; margin: 0; padding: 0;} body{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-image: linear-gradient(0deg, #eee 1px, transparent 0), linear-gradient(90deg, #eee 1px, transparent 0); background-size: 30px 30px; color: #333; min-height: 100dvh; overflow: hidden;} body.has-maximized-card{ overflow: hidden;} body.is-mobile{ overflow-y: auto;} #wallBoard{ position: relative; width: 100vw; height: 100dvh; overflow: hidden;} body.is-mobile #wallBoard{ height: auto; min-height: 100dvh;} .card{ position: absolute; width: 220px; border-radius: 12px; box-shadow: 0 16px 35px rgba(0, 0, 0, 0.2); background: #fff; border: 1px solid rgba(0, 0, 0, 0.08); overflow: hidden; opacity: 0; transform-origin: center; transition: transform 0.35s ease, opacity 0.35s ease, left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease, border-radius 0.35s ease;} .card.dragging{ transition: none; box-shadow: 0 22px 45px rgba(0, 0, 0, 0.35);} .card.maximized{ position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: 0 28px 60px rgba(0, 0, 0, 0.4);} .card-header{ display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255, 255, 255, 0.7); cursor: grab; user-select: none; touch-action: pan-y;} .card-header.dragging{ cursor: grabbing;} .window-controls{ display: flex; align-items: center; gap: 6px;} .window-controls .control{ position: relative; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.08); background: #ccc; cursor: pointer; outline: none; padding: 0; display: inline-flex; align-items: center; justify-content: center;} .window-controls .control.close{ background: #ff5f57; border-color: #e0443e;} .window-controls .control.minimize{ background: #febb2e; border-color: #dea123;} .window-controls .control.maximize{ background: #28c840; border-color: #1aab2c;} .window-controls .control::after{ content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; transition: opacity 0.2s ease;} .card-header:hover .window-controls .control::after{ opacity: 0.8;} .window-controls .control.close::after{ content: '×'; width: auto; height: auto; background: none; font-size: 10px; line-height: 1; font-weight: 700; color: rgba(0, 0, 0, 0.7);} .window-controls .control.minimize::after{ width: 6px; height: 2px; background: rgba(0, 0, 0, 0.6);} .window-controls .control.maximize::after{ width: 6px; height: 6px; background: linear-gradient(45deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.6) 45%, transparent 45%, transparent 55%, rgba(0, 0, 0, 0.6) 55%, rgba(0, 0, 0, 0.6) 100%);} .card-title{ font-size: 13px; font-weight: 600; color: rgba(0, 0, 0, 0.55); padding-left: 10px; flex: 1;} .card-body{ padding: 16px; font-size: 16px; line-height: 1.4; font-weight: 600; color: rgba(0, 0, 0, 0.72); word-break: break-word; overflow-wrap: anywhere; white-space: normal;} .card.maximized{ display: flex; flex-direction: column;} .card.maximized .card-title{ display: none;} .card.maximized .card-body{ flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; padding: clamp(32px, min(10vw, 10vh), 128px); padding-top: clamp(72px, min(14vw, 14vh), 192px); font-size: clamp(48px, min(18vw, 18vh), 200px); line-height: 1.05;} @media (max-width: 768px){ .card{ width: 180px; border-radius: 10px;} .card-body{ padding: 14px; font-size: 14px;} .card-title{ font-size: 12px;}} </style>
+</head>
+<link rel="icon" type="image/svg+xml" href="">
+<script>
+  const faviconColors = ['#ffe0e3', '#c7f0ff', '#ffd8a8', '#d9f2d9', '#e5d7ff', '#f9f7d9', '#d2f0f8', '#ffd4f5', '#fff3cd', '#e0f7fa', '#fce4ec', '#f3e5f5', '#e8f5e9', '#ede7f6', '#fff8e1', '#e1f5fe', '#fbe9e7', '#f1f8e9', '#e0f2f1', '#f9fbe7']; const titleMessages = ['Keep a good mood', 'Drink more water', 'You worked hard today', 'Go to bed early', 'Remember to eat fruit', 'Stay strong, you can do it', 'Wish you success', 'Keep smiling', 'May all your worries disappear', 'Looking forward to our next meeting', 'Dreams will come true', 'It’s cold, wear more clothes', 'Remember to relax yourself', 'Stay energetic every day', 'Love yourself well today', 'Take a proper rest']; function randomFrom(array) { return array[Math.floor(Math.random() * array.length)]; } function updateFavicon(letter = 'SN') { const color = randomFrom(faviconColors); const svg = ` <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="${color}"/><text x="50%" y="50%" font-size="36" fill="#000" font-family="Arial, sans-serif" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`; let link = document.querySelector("link[rel*='icon']"); if (!link) { link = document.createElement('link'); link.rel = 'icon'; link.type = 'image/svg+xml'; document.head.appendChild(link); } link.href = 'data:image/svg+xml,' + encodeURIComponent(svg); } function updateTitle() { const message = randomFrom(titleMessages); document.title = message; } setInterval(() => { const letter = randomFrom(titleMessages).charAt(0).toUpperCase(); updateFavicon(letter); updateTitle(); }, 3000); 
+</script>
+
+<body>
+  <div id="wallBoard"></div>
+  <script>
+    const wallBoard = document.getElementById("wallBoard"),
+      productivityNotes = ["Focus on one task at a time", "Start before you feel ready", "Done is better than perfect", "Plan your day wisely", "Prioritize what matters most", "Finish what you start", "Consistency beats intensity", "Time is your greatest asset", "Remove distractions", "Break big tasks into small steps", "Track your progress", "Deep work=real results", "Stay organized", "Review and improve", "Make progress today",],
+      developerNotes = ["It’s not a bug, it’s a feature", "Refactor, don’t fear", "Commit early, commit often", "Think before you code", "Console.log is your friend", "Debug like a detective", "Clean code wins", "Optimize later, ship now", "Read the documentation", "Version control everything", "Automate repetitive tasks", "Keep learning new tech", "Build. Test. Improve.", "Deploy with confidence", "Code something awesome today",],
+      funnyNotes = ["Coffee first ☕", "Did you try turning it off?", "Procrastination level: Expert", "Snack break incoming", "Brain loading...", "404 Motivation Not Found", "Just one more scroll", "Low battery, need snacks", "Oops… I did it again", "Ctrl + S your life", "Running on caffeine", "Too glam to give a damn", "Work hard, nap harder", "Error: Too tired", "BRB… thinking",],
+      calmNotes = ["Breathe in, breathe out", "You are safe right now", "Slow down", "Rest without guilt", "Feel your feelings", "Peace over pressure", "Let it go", "Be present", "One breath at a time", "You are enough", "Choose calm", "Protect your energy", "It’s okay to pause", "Healing takes time", "Quiet your mind",],
+      successNotes = ["Think big", "Act with confidence", "Opportunities are everywhere", "Take calculated risks", "Build your brand", "Value your time", "Discipline equals freedom", "Network wisely", "Lead with purpose", "Invest in yourself", "Create multiple income streams", "Solve real problems", "Stay ahead of the market", "Be unstoppable", "Success starts today",],
+
+      messages = [...productivityNotes, ...developerNotes, ...funnyNotes, ...calmNotes, ...successNotes,],
+
+      colors = ["#ffe0e3", "#c7f0ff", "#ffd8a8", "#d9f2d9", "#e5d7ff", "#f9f7d9", "#d2f0f8", "#ffd4f5", "#fff3cd", "#e0f7fa", "#fce4ec", "#f3e5f5", "#e8f5e9", "#ede7f6", "#fff8e1", "#e1f5fe", "#fbe9e7", "#f1f8e9", "#e0f2f1", "#f9fbe7", "#fceff9", "#eef7ff", "#f6f0ff", "#fff0f6", "#e6fffa", "#fffbe6", "#f4f6f8", "#f0fff4",],
+
+      cardStates = new WeakMap(),
+      MAXIMIZED_LAYER = 1e6;
+    let activeMaximizedCard = null;
+    const pointerMediaQuery = window.matchMedia("(pointer: coarse)");
+    let isMobile = pointerMediaQuery.matches || window.innerWidth <= 768,
+      maxCards = isMobile ? 120 : 180;
+    const initialCardCount = isMobile ? 18 : 30;
+    let spawnInterval = isMobile ? 700 : 400,
+      zIndexCursor = 200,
+      spawnTimer = null;
+    function randomFrom(e) {
+      return e[Math.floor(Math.random() * e.length)];
+    }
+    function clamp(e, t, i) {
+      return Math.min(Math.max(e, t), i);
+    }
+    function applyTransform(e, t) {
+      const i = t.scale ?? 1,
+        o = t.angle ?? 0;
+      e.style.transform = `scale(${i}) rotate(${o}deg)`;
+    }
+    function bringToFront(e) {
+      e !== activeMaximizedCard
+        ? ((zIndexCursor += 1),
+          activeMaximizedCard && zIndexCursor >= 1e6 && (zIndexCursor = 999999),
+          (e.style.zIndex = zIndexCursor))
+        : (e.style.zIndex = 1e6);
+    }
+    function updateBodyMaximizedState() {
+      document.body.classList.toggle(
+        "has-maximized-card",
+        Boolean(activeMaximizedCard),
+      );
+    }
+    function scheduleNextSpawn() {
+      (clearTimeout(spawnTimer),
+        (spawnTimer = setTimeout(() => {
+          (document.hidden || createCard(), scheduleNextSpawn());
+        }, spawnInterval)));
+    }
+    function syncMobileMode() {
+      const e = pointerMediaQuery.matches || window.innerWidth <= 768;
+      e !== isMobile &&
+        ((isMobile = e),
+          (maxCards = isMobile ? 120 : 180),
+          (spawnInterval = isMobile ? 700 : 400),
+          document.body.classList.toggle("is-mobile", isMobile),
+          scheduleNextSpawn());
+    }
+    function handlewallBoardClick(e) {
+      const t = e.target.closest(".control");
+      if (!t) return;
+      const i = t.closest(".card");
+      i &&
+        wallBoard.contains(i) &&
+        (e.preventDefault(),
+          t.classList.contains("close")
+            ? closeCard(i)
+            : t.classList.contains("minimize")
+              ? minimizeCard(i)
+              : t.classList.contains("maximize") && toggleMaximize(i));
+    }
+    function handlewallBoardPointerDown(e) {
+      const t = e.target.closest(".card");
+      if (!t || !wallBoard.contains(t)) return;
+      const i = e.target.closest(".control"),
+        o = e.target.closest(".card-header"),
+        a = e.pointerType || "mouse",
+        n = !1 !== e.isPrimary;
+      o && !i && "touch" !== a && n ? startDrag(e, t) : bringToFront(t);
+    }
+    function handlewallBoardDoubleClick(e) {
+      const t = e.target.closest(".card-header");
+      if (!t || e.target.closest(".control")) return;
+      const i = t.closest(".card");
+      i && wallBoard.contains(i) && toggleMaximize(i);
+    }
+    function closeCard(e) {
+      const t = cardStates.get(e);
+      if (!t || t.closing) return;
+      (e === activeMaximizedCard &&
+        ((activeMaximizedCard = null), updateBodyMaximizedState()),
+        (t.closing = !0),
+        (t.scale = 0.1),
+        (e.style.opacity = "0"),
+        applyTransform(e, t));
+      const i = (t) => {
+        "opacity" === t.propertyName &&
+          (e.removeEventListener("transitionend", i), e.remove());
+      };
+      e.addEventListener("transitionend", i);
+    }
+    function minimizeCard(e) {
+      const t = cardStates.get(e);
+      if (!t || t.closing) return;
+      const i = () => {
+        ((t.closing = !0), bringToFront(e));
+        const i = Math.max(window.innerHeight - 24, 0),
+          o = clamp(
+            t.left,
+            16,
+            Math.max(window.innerWidth - e.offsetWidth - 16, 16),
+          );
+        ((t.left = o),
+          (t.top = i),
+          (t.scale = 0.1),
+          (t.angle = 0),
+          (e.style.left = `${o}px`),
+          (e.style.top = `${i}px`),
+          (e.style.opacity = "0.35"),
+          applyTransform(e, t));
+        const a = (t) => {
+          "transform" === t.propertyName &&
+            (e.removeEventListener("transitionend", a), e.remove());
+        };
+        e.addEventListener("transitionend", a);
+      };
+      if (t.maximized)
+        return (
+          restoreFromMaximize(e, t),
+          void requestAnimationFrame(() => {
+            requestAnimationFrame(i);
+          })
+        );
+      i();
+    }
+    function toggleMaximize(e) {
+      const t = cardStates.get(e);
+      t &&
+        !t.closing &&
+        (t.maximized ? restoreFromMaximize(e, t) : maximizeCard(e, t));
+    }
+    function maximizeCard(e, t) {
+      if (activeMaximizedCard && activeMaximizedCard !== e) {
+        const e = cardStates.get(activeMaximizedCard);
+        e && restoreFromMaximize(activeMaximizedCard, e);
+      }
+      ((t.beforeMaximize = {
+        left: t.left,
+        top: t.top,
+        scale: t.scale ?? 1,
+        angle: t.angle ?? 0,
+        width: e.offsetWidth,
+        height: e.offsetHeight,
+        inlinePosition: e.style.position,
+      }),
+        e.classList.add("maximized"),
+        (e.style.position = "fixed"),
+        (e.style.left = "0px"),
+        (e.style.top = "0px"),
+        (e.style.width = "100vw"),
+        (e.style.height = "100dvh"),
+        (e.style.borderRadius = "0"),
+        (t.left = 0),
+        (t.top = 0),
+        (t.scale = 1),
+        (t.angle = 0),
+        applyTransform(e, t),
+        (activeMaximizedCard = e),
+        bringToFront(e),
+        (t.maximized = !0),
+        updateBodyMaximizedState());
+    }
+    function restoreFromMaximize(e, t) {
+      const i = t.beforeMaximize;
+      i &&
+        (e.classList.remove("maximized"),
+          (e.style.position = i.inlinePosition || "absolute"),
+          (e.style.left = `${i.left}px`),
+          (e.style.top = `${i.top}px`),
+          (e.style.width = `${i.width}px`),
+          (e.style.height = `${i.height}px`),
+          (e.style.borderRadius = "12px"),
+          (t.left = i.left),
+          (t.top = i.top),
+          (t.scale = i.scale ?? 1),
+          (t.angle = i.angle ?? t.angle ?? 0),
+          applyTransform(e, t),
+          (t.maximized = !1),
+          activeMaximizedCard === e &&
+          ((activeMaximizedCard = null), updateBodyMaximizedState()),
+          bringToFront(e),
+          setTimeout(() => {
+            t.maximized ||
+              ((e.style.width = ""),
+                (e.style.height = ""),
+                (e.style.borderRadius = ""),
+                i.inlinePosition
+                  ? (e.style.position = i.inlinePosition)
+                  : (e.style.position = ""),
+                (t.beforeMaximize = null));
+          }, 360));
+    }
+    function startDrag(e, t) {
+      if (e.target.closest(".control")) return;
+      const i = cardStates.get(t);
+      if (!i || i.closing || i.maximized) return;
+      (e.preventDefault(), bringToFront(t));
+      const o = t.querySelector(".card-header");
+      (t.classList.add("dragging"),
+        o.classList.add("dragging"),
+        (i.dragging = !0),
+        (i.dragOffsetX = e.clientX - i.left),
+        (i.dragOffsetY = e.clientY - i.top));
+      let a = null,
+        n = i.left,
+        r = i.top;
+      const s = () => {
+        a = null;
+        const e = Math.max(window.innerWidth - t.offsetWidth, 0),
+          o = Math.max(window.innerHeight - t.offsetHeight, 0);
+        ((i.left = clamp(n, 0.4 * -t.offsetWidth, e)),
+          (i.top = clamp(r, 0.4 * -t.offsetHeight, o)),
+          (t.style.left = `${i.left}px`),
+          (t.style.top = `${i.top}px`));
+      },
+        d = (e) => {
+          i.dragging &&
+            ((n = e.clientX - i.dragOffsetX),
+              (r = e.clientY - i.dragOffsetY),
+              null === a && (a = requestAnimationFrame(s)));
+        },
+        l = () => {
+          ((i.dragging = !1),
+            t.classList.remove("dragging"),
+            o.classList.remove("dragging"),
+            null !== a && (cancelAnimationFrame(a), s()),
+            document.removeEventListener("pointermove", d),
+            document.removeEventListener("pointerup", l));
+        };
+      (document.addEventListener("pointermove", d),
+        document.addEventListener("pointerup", l));
+    }
+    function createCard() {
+      const e = document.createElement("div");
+      e.className = "card";
+      const t = randomFrom(colors),
+        i = isMobile ? 6 : 10,
+        o = (Math.random() - 0.5) * i,
+        a = isMobile ? 0.8 : 0.65,
+        n = isMobile ? 180 : 220,
+        r = isMobile ? 130 : 140,
+        s = isMobile ? 12 : 16,
+        d = isMobile ? 12 : 20,
+        l = s + Math.random() * Math.max(window.innerWidth - n - 2 * s, 0),
+        c = d + Math.random() * Math.max(window.innerHeight - r - 2 * d, 0);
+      ((e.style.background = t),
+        (e.style.left = `${l}px`),
+        (e.style.top = `${c}px`),
+        (e.style.opacity = "0"),
+        activeMaximizedCard && zIndexCursor >= 999998 && (zIndexCursor = 999998),
+        (e.style.zIndex = ++zIndexCursor),
+        (e.innerHTML = `\n\t\t\t\t\t<div class="card-header">\n\t\t\t\t\t\t<div class="window-controls">\n\t\t\t\t\t\t\t<button class="control close" type="button" aria-label="关闭"></button>\n\t\t\t\t\t\t\t<button class="control minimize" type="button" aria-label="最小化"></button>\n\t\t\t\t\t\t\t<button class="control maximize" type="button" aria-label="最大化"></button>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class="card-title">Kind Tips</div>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class="card-body">${randomFrom(messages)}</div>\n\t\t\t\t`));
+      const m = { angle: o, scale: a, left: l, top: c, maximized: !1, closing: !1 };
+      if (
+        (cardStates.set(e, m),
+          applyTransform(e, m),
+          wallBoard.appendChild(e),
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              ((m.scale = 1), applyTransform(e, m), (e.style.opacity = "1"));
+            });
+          }),
+          wallBoard.children.length > maxCards)
+      ) {
+        const t = wallBoard.firstElementChild;
+        t && t !== e && t.remove();
+      }
+    }
+    (document.body.classList.toggle("is-mobile", isMobile),
+      wallBoard.addEventListener("click", handlewallBoardClick),
+      wallBoard.addEventListener("pointerdown", handlewallBoardPointerDown),
+      wallBoard.addEventListener("dblclick", handlewallBoardDoubleClick));
+    for (let e = 0; e < initialCardCount; e++)
+      setTimeout(createCard, e * (isMobile ? 60 : 40));
+    (scheduleNextSpawn(),
+      document.addEventListener("visibilitychange", () => {
+        document.hidden || scheduleNextSpawn();
+      }),
+      "function" == typeof pointerMediaQuery.addEventListener
+        ? pointerMediaQuery.addEventListener("change", syncMobileMode)
+        : "function" == typeof pointerMediaQuery.addListener &&
+        pointerMediaQuery.addListener(syncMobileMode),
+      window.addEventListener("resize", syncMobileMode));
+
+  </script>
+
+
+</body>
+
+</html>
