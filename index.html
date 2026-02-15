@@ -20,11 +20,11 @@
       developerNotes = ["It’s not a bug, it’s a feature", "Refactor, don’t fear", "Commit early, commit often", "Think before you code", "Console.log is your friend", "Debug like a detective", "Clean code wins", "Optimize later, ship now", "Read the documentation", "Version control everything", "Automate repetitive tasks", "Keep learning new tech", "Build. Test. Improve.", "Deploy with confidence", "Code something awesome today",],
       funnyNotes = ["Coffee first ☕", "Did you try turning it off?", "Procrastination level: Expert", "Snack break incoming", "Brain loading...", "404 Motivation Not Found", "Just one more scroll", "Low battery, need snacks", "Oops… I did it again", "Ctrl + S your life", "Running on caffeine", "Too glam to give a damn", "Work hard, nap harder", "Error: Too tired", "BRB… thinking",],
       calmNotes = ["Breathe in, breathe out", "You are safe right now", "Slow down", "Rest without guilt", "Feel your feelings", "Peace over pressure", "Let it go", "Be present", "One breath at a time", "You are enough", "Choose calm", "Protect your energy", "It’s okay to pause", "Healing takes time", "Quiet your mind",],
-      successNotes = ["Think big", "Act with confidence", "Opportunities are everywhere", "Take calculated risks", "Build your brand", "Value your time", "Discipline equals freedom", "Network wisely", "Lead with purpose", "Invest in yourself", "Create multiple income streams", "Solve real problems", "Stay ahead of the market", "Be unstoppable", "Success starts today",],
+      successNotes = ["Think big", "Act with confidence", "Opportunities are everywhere", "Take calculated risks", "Build your brand", "Value your time", "Discipline equals freedom", "Network wisely", "Lead with purpose", "Invest in yourself", "Create multiple income streams", "Solve real problems", "Stay ahead of the market", "Be unstoppable", "Success starts today",]
 
-      messages = [...productivityNotes, ...developerNotes, ...funnyNotes, ...calmNotes, ...successNotes,],
+    const categories = [{ name: "Productivity", notes: productivityNotes }, { name: "Dev Life", notes: developerNotes }, { name: "Just for Fun", notes: funnyNotes }, { name: "Inner Peace", notes: calmNotes }, { name: "Success", notes: successNotes }];
 
-      colors = ["#ffe0e3", "#c7f0ff", "#ffd8a8", "#d9f2d9", "#e5d7ff", "#f9f7d9", "#d2f0f8", "#ffd4f5", "#fff3cd", "#e0f7fa", "#fce4ec", "#f3e5f5", "#e8f5e9", "#ede7f6", "#fff8e1", "#e1f5fe", "#fbe9e7", "#f1f8e9", "#e0f2f1", "#f9fbe7", "#fceff9", "#eef7ff", "#f6f0ff", "#fff0f6", "#e6fffa", "#fffbe6", "#f4f6f8", "#f0fff4",],
+    colors = ["#ffe0e3", "#c7f0ff", "#ffd8a8", "#d9f2d9", "#e5d7ff", "#f9f7d9", "#d2f0f8", "#ffd4f5", "#fff3cd", "#e0f7fa", "#fce4ec", "#f3e5f5", "#e8f5e9", "#ede7f6", "#fff8e1", "#e1f5fe", "#fbe9e7", "#f1f8e9", "#e0f2f1", "#f9fbe7", "#fceff9", "#eef7ff", "#f6f0ff", "#fff0f6", "#e6fffa", "#fffbe6", "#f4f6f8", "#f0fff4",],
 
       cardStates = new WeakMap(),
       MAXIMIZED_LAYER = 1e6;
@@ -261,6 +261,8 @@
     }
     function createCard() {
       const e = document.createElement("div");
+      const category = randomFrom(categories);
+      const noteContent = randomFrom(category.notes);
       e.className = "card";
       const t = randomFrom(colors),
         i = isMobile ? 6 : 10,
@@ -278,7 +280,7 @@
         (e.style.opacity = "0"),
         activeMaximizedCard && zIndexCursor >= 999998 && (zIndexCursor = 999998),
         (e.style.zIndex = ++zIndexCursor),
-        (e.innerHTML = `\n\t\t\t\t\t<div class="card-header">\n\t\t\t\t\t\t<div class="window-controls">\n\t\t\t\t\t\t\t<button class="control close" type="button" aria-label="关闭"></button>\n\t\t\t\t\t\t\t<button class="control minimize" type="button" aria-label="最小化"></button>\n\t\t\t\t\t\t\t<button class="control maximize" type="button" aria-label="最大化"></button>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class="card-title">Kind Tips</div>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class="card-body">${randomFrom(messages)}</div>\n\t\t\t\t`));
+        (e.innerHTML = ` <div class="card-header"><div class="window-controls"><button class="control close" type="button" aria-label="Close"></button><button class="control minimize" type="button" aria-label="Minimize"></button><button class="control maximize" type="button" aria-label="Maximize"></button></div><div class="card-title">${category.name}</div></div><div class="card-body">${noteContent}</div>`));
       const m = { angle: o, scale: a, left: l, top: c, maximized: !1, closing: !1 };
       if (
         (cardStates.set(e, m),
